@@ -661,7 +661,7 @@ extension MMPlayerLayer {
     }
     
     private func removeAllObserver() {
-        videoRectObservation?.invalidate()
+//        videoRectObservation?.invalidate()
         videoRectObservation = nil
         boundsObservation = nil
         frameObservation = nil
