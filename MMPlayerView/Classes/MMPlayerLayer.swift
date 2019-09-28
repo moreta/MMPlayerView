@@ -15,7 +15,7 @@ public extension MMPlayerLayer {
         case none
         case memory(count: Int)
     }
-    
+
     enum PlayStatus {
         case ready
         case unknown
@@ -23,7 +23,7 @@ public extension MMPlayerLayer {
         case playing
         case pause
         case end
-        
+
         static func == (lhs: PlayStatus, rhs: PlayStatus) -> Bool {
             switch (lhs, rhs) {
             case (.ready, .ready), (.unknown, .unknown), (.playing, .playing), (.pause, .pause), (.end, .end):
@@ -35,17 +35,17 @@ public extension MMPlayerLayer {
             }
         }
     }
-    
+
     enum CoverFitType {
         case fitToPlayerView
         case fitToVideoRect
     }
-    
+
     enum CoverAutoHideType {
         case autoHide(after: TimeInterval)
         case disable
     }
-    
+
     enum OrientationStatus: Int {
         case landscapeLeft
         case landscapeRight
@@ -133,7 +133,7 @@ public class MMPlayerLayer: AVPlayerLayer {
             return _playView
         }
     }
-    
+
     /**
      Loop video when end
      
@@ -215,7 +215,7 @@ public class MMPlayerLayer: AVPlayerLayer {
             self.isBackgroundPause = false
             self.player?.replaceCurrentItem(with: nil)
             self.showCover(isShow: false)
-            
+
             guard let url = newValue else {
                 return
             }
@@ -225,7 +225,7 @@ public class MMPlayerLayer: AVPlayerLayer {
                 self.player?.replaceCurrentItem(with: cacheItem)
             } else {
                 self.asset = AVURLAsset(url: url)
-                
+
                 self.asset?.loadValuesAsynchronously(forKeys: assetKeysRequiredToPlay) { [weak self] in
                     DispatchQueue.main.async {
                         if let a = self?.asset, let keys = self?.assetKeysRequiredToPlay {
@@ -237,7 +237,7 @@ public class MMPlayerLayer: AVPlayerLayer {
                                     return
                                 }
                             }
-                            
+
                             let item = MMPlayerItem(asset: a, delegate: self)
                             switch self?.cacheType {
                             case .some(.memory(let count)):
@@ -245,7 +245,7 @@ public class MMPlayerLayer: AVPlayerLayer {
                                 self?.cahce.appendCache(key: url, item: item)
                             default:
                                 self?.cahce.removeAll()
-                                
+
                             }
                             self?.player?.replaceCurrentItem(with: item)
                         }
@@ -254,7 +254,7 @@ public class MMPlayerLayer: AVPlayerLayer {
             }
         }
     }
-    
+
     public weak var mmDelegate: MMPlayerLayerProtocol?
     /**
      If true, player will fullscreen when roatate to landscape
@@ -287,7 +287,7 @@ public class MMPlayerLayer: AVPlayerLayer {
             }
         }
     }
-    
+
     private lazy var  bgView: UIView = {
         let v = UIView()
         v.translatesAutoresizingMaskIntoConstraints = false
@@ -299,17 +299,17 @@ public class MMPlayerLayer: AVPlayerLayer {
         v.backgroundColor = UIColor.clear
         return v
     }()
-   
+
     private lazy var tapGesture: UITapGestureRecognizer = {
         let g = UITapGestureRecognizer(target: self, action: #selector(MMPlayerLayer.touchAction(gesture:)))
         return g
     }()
-    
+
     private lazy var landscapeWindow: MMLandscapeWindow = {
         let window = MMLandscapeWindow(playerLayer: self)
         return window
     }()
-    
+
     weak private var _playView: UIView? {
         willSet {
             bgView.removeFromSuperview()
@@ -353,19 +353,23 @@ public class MMPlayerLayer: AVPlayerLayer {
         super.init(layer: layer)
         (layer as? MMPlayerLayer)?.isInitLayer = false
     }
-    
+
     required public init?(coder aDecoder: NSCoder) {
         super.init(coder: aDecoder)
     }
-    
+
     public override init() {
         super.init()
         self.setup()
     }
-    
+
     deinit {
         if !isInitLayer {
-            self.removeAllObserver()
+            do {
+                self.removeAllObserver()
+            } catch {
+                // nothing todo
+            }
         }
     }
 }
@@ -382,7 +386,7 @@ extension MMPlayerLayer {
     public func setOrientation(_ status: MMPlayerLayer.OrientationStatus) {
         self.orientation = status
     }
-    
+
     /**
      If cover enable show on video, else hidden
      */
@@ -390,7 +394,7 @@ extension MMPlayerLayer {
         self.coverView?.isHidden = !enable
         self.tapGesture.isEnabled = enable
     }
-    
+
     public func delayHideCover() {
         self.showCover(isShow: true)
         switch self.autoHideCoverType {
@@ -401,7 +405,7 @@ extension MMPlayerLayer {
             break
         }
     }
-    
+
     /**
      Set player cover view
      ** Cover view need implement 'MMPlayerCoverViewProtocol' **
@@ -415,7 +419,7 @@ extension MMPlayerLayer {
             c.alpha = 1.0
             return
         }
-        
+
         cover.backgroundColor = UIColor.clear
         cover.layoutIfNeeded()
         coverView?.removeFromSuperview()
@@ -484,14 +488,14 @@ extension MMPlayerLayer {
         }
         self.playUrl = willPlayUrl
     }
-    
+
     @objc func touchAction(gesture: UITapGestureRecognizer) {
         switch self.currentPlayStatus {
         case .unknown:
             return
         default: break
         }
-        
+
         if let p = self.playView {
             let point = gesture.location(in: p)
             if self.videoRect.isEmpty || self.videoRect.contains(point) {
@@ -500,7 +504,7 @@ extension MMPlayerLayer {
             mmDelegate?.touchInVideoRect(contain: self.videoRect.contains(point))
         }
     }
-    
+
     @objc public func showCover(isShow: Bool) {
         self.isCoverShow = isShow
         if isShow {
@@ -511,13 +515,13 @@ extension MMPlayerLayer {
             default: break
             }
         }
-        
+
         if let cover = self.coverView ,
             cover.responds(to: #selector(cover.coverView(isShow:))) {
             cover.coverView!(isShow: isShow)
             return
         }
-        
+
         UIView.animate(withDuration: 0.2, animations: { [weak self] in
             self?.coverView?.alpha = (isShow) ? 1.0 : 0.0
         })
@@ -534,7 +538,7 @@ extension MMPlayerLayer {
         CATransaction.setDisableActions(true)
         NotificationCenter.default.addObserver(forName: UIDevice.orientationDidChangeNotification, object: nil, queue: nil) { [weak self] (_) in
             guard let self = self, self.fullScreenWhenLandscape else {return}
-            
+
             switch UIDevice.current.orientation {
             case .landscapeLeft:
                 self.orientation = .landscapeLeft
@@ -546,7 +550,7 @@ extension MMPlayerLayer {
             }
         }
     }
-    
+
     private func updateCoverConstraint() {
         let vRect = self.coverFitType == .fitToVideoRect ? videoRect : bgView.bounds
         if vRect.isEmpty {
@@ -557,7 +561,7 @@ extension MMPlayerLayer {
         }
         self.frame = bgView.bounds
     }
-    
+
     private func startLoading(isStart: Bool) {
         if isStart {
             self.indicator.start()
@@ -573,7 +577,7 @@ extension MMPlayerLayer {
         NotificationCenter.default.removeObserver(self)
         if timeObserver == nil {
             timeObserver = self.player?.addPeriodicTimeObserver(forInterval: CMTimeMake(value: 1, timescale: 100), queue: DispatchQueue.main, using: { [weak self] (time) in
-                
+
                 if time.isIndefinite {
                     return
                 }
@@ -582,7 +586,7 @@ extension MMPlayerLayer {
                 }
             })
         }
-        
+
         NotificationCenter.default.addObserver(forName: UIApplication.willResignActiveNotification, object: nil, queue: nil, using: { [weak self] (nitification) in
             switch self?.currentPlayStatus ?? .unknown {
             case .pause:
@@ -592,16 +596,16 @@ extension MMPlayerLayer {
             }
             self?.player?.pause()
         })
-        
+
         NotificationCenter.default.addObserver(forName: UIApplication.didBecomeActiveNotification, object: nil, queue: nil, using: { [weak self] (nitification) in
             if self?.isBackgroundPause == false {
                 self?.player?.play()
             }
             self?.isBackgroundPause = false
         })
-        
+
         NotificationCenter.default.addObserver(forName: .AVPlayerItemDidPlayToEndTime, object: nil, queue: nil, using: { [weak self] (_) in
-          
+
             if self?.repeatWhenEnd == true {
                 self?.player?.seek(to: CMTime.zero)
                 self?.player?.play()
@@ -616,7 +620,7 @@ extension MMPlayerLayer {
                 }
             }
         })
-        
+
         videoRectObservation = self.observe(\.videoRect, options: [.new, .old]) { [weak self] (player, change) in
             if change.newValue != change.oldValue {
                 self?.updateCoverConstraint()
@@ -628,13 +632,13 @@ extension MMPlayerLayer {
                 self?.updateCoverConstraint()
             }
         })
-        
+
         boundsObservation = bgView.observe(\.bounds, options: [.new, .old], changeHandler: { [weak self] (view, change) in
             if change.newValue != change.oldValue, change.newValue != .zero {
                 self?.updateCoverConstraint()
             }
         })
-        
+
         mutedObservation = self.player?.observe(\.isMuted, options: [.new, .old], changeHandler: { [weak self] (play, change) in
             if let new = change.newValue, new != change.oldValue {
                 self?.coverView?.player?(isMuted: new)
@@ -659,9 +663,9 @@ extension MMPlayerLayer {
             }
         })
     }
-    
+
     private func removeAllObserver() {
-//        videoRectObservation?.invalidate()
+        videoRectObservation?.invalidate()
         videoRectObservation = nil
         boundsObservation = nil
         frameObservation = nil
@@ -697,7 +701,7 @@ extension MMPlayerLayer {
 
 // MARK: - Download
 extension MMPlayerLayer {
-    
+
     public func download(observer status: @escaping ((MMPlayerDownloader.DownloadStatus)->Void)) -> MMPlayerObservation? {
         guard let url = self.playUrl else {
             status(.failed(err: "URL empty"))
@@ -707,11 +711,11 @@ extension MMPlayerLayer {
             status(.failed(err: "Input fileURL are Invalid"))
             return nil
         }
-        
+
         MMPlayerDownloader.shared.download(url: url)
         return self.observerDownload(status: status)
     }
-    
+
     public func observerDownload(status: @escaping ((MMPlayerDownloader.DownloadStatus)->Void)) -> MMPlayerObservation? {
         guard let url = self.playUrl else {
             status(.failed(err: "URL empty"))
@@ -744,13 +748,13 @@ extension MMPlayerLayer: MMPlayerItemProtocol {
             break
         }
     }
-    
+
     func isPlaybackKeepUp(isKeepUp: Bool) {
         if isKeepUp == true {
             self.startLoading(isStart: false)
         }
     }
-    
+
     func isPlaybackEmpty(isEmpty: Bool) {
         if isEmpty {
             self.startLoading(isStart: true)
